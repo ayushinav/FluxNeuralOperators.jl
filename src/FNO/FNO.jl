@@ -89,17 +89,13 @@ Chain(
 ```
 """
 function FourierNeuralOperator(;
-                               ch = (2, 64, 64, 64, 64, 64, 128, 1),
-                               modes = (16,),
-                               σ = gelu)
+        ch = (2, 64, 64, 64, 64, 64, 128, 1),
+        modes = (16,),
+        σ = gelu)
     Transform = FourierTransform
     lifting = Dense(ch[1], ch[2])
-    mapping = Chain(OperatorKernel(ch[2] => ch[3], modes, Transform, σ),
-                    OperatorKernel(ch[3] => ch[4], modes, Transform, σ),
-                    OperatorKernel(ch[4] => ch[5], modes, Transform, σ),
-                    OperatorKernel(ch[5] => ch[6], modes, Transform))
-    project = Chain(Dense(ch[6], ch[7], σ),
-                    Dense(ch[7], ch[8]))
+    mapping = Chain([OperatorKernel(ch[i] => ch[i + 1], modes, Transform, σ) for i in 2:(length(ch) - 2)]...)
+    project = Chain(Dense(ch[end - 1], ch[end]))
 
     return FourierNeuralOperator(lifting, mapping, project)
 end
@@ -194,15 +190,15 @@ Chain(
 ```
 """
 function MarkovNeuralOperator(;
-                              ch = (1, 64, 64, 64, 64, 64, 1),
-                              modes = (24, 24),
-                              σ = gelu)
+        ch = (1, 64, 64, 64, 64, 64, 1),
+        modes = (24, 24),
+        σ = gelu)
     Transform = FourierTransform
     lifting = Dense(ch[1], ch[2])
     mapping = Chain(OperatorKernel(ch[2] => ch[3], modes, Transform, σ),
-                    OperatorKernel(ch[3] => ch[4], modes, Transform, σ),
-                    OperatorKernel(ch[4] => ch[5], modes, Transform, σ),
-                    OperatorKernel(ch[5] => ch[6], modes, Transform, σ))
+        OperatorKernel(ch[3] => ch[4], modes, Transform, σ),
+        OperatorKernel(ch[4] => ch[5], modes, Transform, σ),
+        OperatorKernel(ch[5] => ch[6], modes, Transform, σ))
     project = Dense(ch[6], ch[7])
     fno = FourierNeuralOperator(lifting, mapping, project)
 
